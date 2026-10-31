@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# Secrets & local config
+.env
+.env.*
+!.env.example
+
+# Database & user data — NEVER commit
+vault.db
+*.db
+*.sqlite3
+uploads/
+server.log
+*.log
+
+# Downloaded artifacts
+*.whl
+pydantic_core-*.whl
+
+# Test files
+diploma.txt
+test_*.txt
+
+# OS
+.DS_Store
+Thumbs.db

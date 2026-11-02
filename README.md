@@ -50,3 +50,19 @@ FastAPI · SQLAlchemy 2 · SQLite · Pydantic v2 · python-jose · passlib
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+## Sample Output
+
+```json
+{
+  "user": { "full_name": "رامین اجلال", "email": "ramin.resume@example.com" },
+  "summary": "4 verified: education=1, financial=1, achievement=1, identity=1",
+  "documents": [
+    { "doc_type": "education",   "title": "کارشناسی ارشد مهندسی نرم‌افزار", "issuer": "دانشگاه تهران" },
+    { "doc_type": "financial",   "title": "گواهی تسویه حساب",           "issuer": "بانک ملت" },
+    { "doc_type": "achievement", "title": "مقام اول هکاتون هوش مصنوعی", "issuer": "دانشگاه شریف" },
+    { "doc_type": "identity",    "title": "کارت ملی هوشمند",            "issuer": "ثبت احوال" }
+  ]
+}
+```
+

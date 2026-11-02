@@ -15,7 +15,7 @@ SECRET=os.environ.get("SECRET_KEY")
 if not SECRET or len(SECRET) < 32:
     raise SystemExit("FATAL: SECRET_KEY must be set and at least 32 chars. "
                      "Run: export SECRET_KEY=$(python3 -c 'import secrets;print(secrets.token_hex(32))')")
-UPLOAD_DIR="./uploads"
+UPLOAD_DIR="/tmp/uploads"
 Path(UPLOAD_DIR).mkdir(exist_ok=True)
 
 engine=create_engine("sqlite:///./vault.db",connect_args={"check_same_thread":False})

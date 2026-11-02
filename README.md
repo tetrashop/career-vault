@@ -1,107 +1,98 @@
-# CareerVault — MVP
+# CareerVault Pro 🚀
 
-> ⚠️ **Status: Prototype / MVP** — Not production-ready for persistent data.
+> **Status:** MVP / Prototype — A comprehensive digital career identity wallet and resume builder.
 
-A minimal FastAPI service for a personal "career identity wallet": authenticated users can upload documents (education, financial, achievements, identity) and get a unified profile with SHA-256 integrity fingerprints.
+CareerVault is a FastAPI-based service that allows users to build a unified digital resume. It goes beyond a simple document uploader by securely managing personal info, work experience, skills, and verified documents (with SHA-256 integrity fingerprints). It exports standard **JSON Resume** format, making it compatible with ATS systems and LinkedIn.
 
-## 🚀 Live Demo
-
+## 🔗 Live Demo
 **[https://career-vault-tan.vercel.app/docs](https://career-vault-tan.vercel.app/docs)**
 
-> **Note on Data Persistence:** This demo runs on Vercel Serverless with SQLite stored in `/tmp`. **Data resets on every cold start.** For real use, migrate to PostgreSQL.
+*Note: This demo runs on Vercel Serverless with SQLite in `/tmp`. Data resets on cold starts. For production, see the [Migration](#migration-to-production) section.*
 
-## Features
+## ✨ Features (v2.0 Pro)
 
-- JWT authentication (HS256) with `pbkdf2_sha256` password hashing
-- Document upload with SHA-256 checksum
-- Per-user profile with aggregated summary
-- Audit log for every upload
-- Swagger UI at `/docs`
+- **Authentication:** JWT (HS256) with `pbkdf2_sha256` password hashing.
+- **Full Profile Management:** Update contact info, LinkedIn, GitHub, and bio.
+- **Experience Builder:** Add, view, and manage work history.
+- **Skills & Projects:** Categorize skills by level and add portfolio projects.
+- **Verified Documents:** Upload documents (education, financial, achievement, identity) with SHA-256 checksums.
+- **Standard Export:** Get your full resume in the universal **JSON Resume** standard format.
+- **Auto Docs:** Interactive Swagger UI at `/docs`.
 
-## Stack
+## 🛠️ Tech Stack
+**Backend:** FastAPI, Pydantic v2, SQLAlchemy 2.0, SQLite, Passlib, Python-Jose.
+**Deployment:** Vercel (Serverless).
 
-FastAPI · SQLAlchemy 2 · SQLite · Pydantic v2 · python-jose · passlib
+## 🚀 Quick Start (Local)
 
-## API
+```bash
+python3 -m venv .venv && . .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+python3 -c "import secrets;print('SECRET_KEY='+secrets.token_hex(32))" >> .env
+python3 app.py
+```
 
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| POST | `/api/auth/register` | – | Create account |
-| POST | `/api/auth/login` | – | Get JWT token |
-| POST | `/api/documents` | JWT | Upload a document |
-| GET | `/api/documents` | JWT | List your documents |
-| GET | `/api/profile` | JWT | Full profile + summary |
-| GET | `/health` | – | Health check |
+Open http://127.0.0.1:8000/docs
 
-## Deployment (Vercel)
+📡 API Endpoints
 
-1. Fork this repo
-2. Import to Vercel → Framework Preset: **FastAPI**
-3. Set environment variable `SECRET_KEY` (generate with `python3 -c "import secrets;print(secrets.token_hex(32))"`)
-4. Deploy
+Method Path Auth Description
+POST /api/auth/register – Create account
+POST /api/auth/login – Get JWT token
+PUT /api/profile/info JWT Update contact & bio
+POST /api/profile/experience JWT Add work experience
+POST /api/profile/skills JWT Add skill
+POST /api/profile/projects JWT Add project
+POST /api/documents JWT Upload a document
+GET /api/resume JWT Full aggregated resume
+GET /api/resume/json-resume JWT Standard JSON Resume export
+GET /health – Health check
 
-## Limitations
+🎯 Sample Output
 
-- **No persistent storage** — SQLite in `/tmp` resets on cold starts
-- No file encryption at rest (only SHA-256 integrity)
-- No real OCR or content verification
-- No rate limiting, CSRF, or CORS hardening
-
-## License
-
-MIT — see [LICENSE](LICENSE).
-
-## Sample Output
+Here is an example of a fully populated resume for "Ramin Edjlal" fetched from /api/resume:
 
 ```json
 {
-  "user": { "full_name": "رامین اجلال", "email": "ramin.resume@example.com" },
-  "summary": "4 verified: education=1, financial=1, achievement=1, identity=1",
-  "documents": [
-    { "doc_type": "education",   "title": "کارشناسی ارشد مهندسی نرم‌افزار", "issuer": "دانشگاه تهران" },
-    { "doc_type": "financial",   "title": "گواهی تسویه حساب",           "issuer": "بانک ملت" },
-    { "doc_type": "achievement", "title": "مقام اول هکاتون هوش مصنوعی", "issuer": "دانشگاه شریف" },
-    { "doc_type": "identity",    "title": "کارت ملی هوشمند",            "issuer": "ثبت احوال" }
-  ]
+  "basics": {
+    "name": "رامین اجلال",
+    "email": "ramin.demo@example.com",
+    "phone": "09123456789",
+    "location": "Tehran",
+    "linkedin": "linkedin.com/in/ramin",
+    "github": "github.com/tetrashop",
+    "bio": "مهندس نرم‌افزار و پژوهشگر هوش مصنوعی"
+  },
+  "experience": [
+    { "title": "مهندس ارشد", "company": "شرکت فناوری", "start": "1400", "end": "اکنون", "description": "توسعه بک‌اند" },
+    { "title": "کارآموز", "company": "استارتاپ", "start": "1399", "end": "1400", "description": "توسعه فرانت‌اند" }
+  ],
+  "skills": [
+    { "name": "Python", "level": "Expert" },
+    { "name": "FastAPI", "level": "Advanced" }
+  ],
+  "projects": [],
+  "verified_documents_count": 0
 }
 ```
 
-عنوان پروژه: CareerVault – نمونه اولیه (MVP) یک کیف پول هویت حرفه‌ای (Career Identity Wallet)
-نویسنده/پژوهشگر: رامین اجلال
-لینک دموی زنده: career-vault-tan.vercel.app
+⚠️ Limitations (MVP)
 
-🌟 چشم‌انداز و ایده (The Vision)
+· No persistent storage: SQLite in /tmp resets on Vercel cold starts.
+· No file encryption at rest: Only integrity (SHA-256) is checked.
+· No real OCR: verified is set to true upon upload; content is not parsed.
+· No rate limiting: Add slowapi for production.
 
-ایده اولیه این پژوهش، خلق سیستمی بود که فراتر از یک رزومه سنتی عمل کند؛ سیستم‌ی که بتواند تمام سوابق هویتی، تحصیلی، مالی و دستاوردهای یک فرد را به‌صورت یکپارچه، امن و قابل اثبات جمع‌آوری کند. پرسش پژوهشی این بود: «چگونه می‌توان با استفاده از فناوری‌های وب مدرن، اصالت اسناد و هویت دیجیتال افراد را بدون نیاز به واسطه‌های پیچیده تضمین کرد؟»
+🔄 Migration to Production
 
-🧠 ابعاد پژوهشی و نویسندگی (Research & Writing)
+To make this persistent and production-ready:
 
-این پروژه صرفاً یک محصول نرم‌افزاری نیست، بلکه حاصل یک فرآیند مستندسازی و حل مسئله سیستماتیک است:
+1. Database: Switch to PostgreSQL (Neon, Supabase).
+2. Storage: Use Vercel Blob or AWS S3 for document uploads.
+3. Auth: Set a strong SECRET_KEY in Vercel Environment Variables.
+4. Security: Restrict CORS and add rate limiting.
 
-· تحقیق و توسعه (R&D) در محیط‌های محدود: بخش عمده‌ای از توسعه این پروژه در محیط شبیه‌سازی‌شده ترمینال (Termux روی اندروید) انجام شد. این چالش نیازمند پژوهش در مورد مدیریت وابستگی‌های پایتون، کامپایل کدهای Rust (برای pydantic-core) و مهندسی معکوس خطاهای مربوط به سیستم‌عامل اندروید بود که تماماً در مستندات پروژه ثبت شده است.
-· مستندسازی فنی (Technical Writing): طراحی مستندات API با استاندارد OpenAPI (Swagger) و نگارش فایل README.md شفاف، به‌گونه‌ای که هر توسعه‌دهنده دیگری بتواند بدون دانش پیش‌زمینه، پروژه را اجرا و تست کند.
-· تفکر انتقادی در معماری: درک محدودیت‌های زیرساخت‌های Serverless (مانند Vercel) و پذیرش آگاهانه محدودیت‌هایی مثل «نبود فایل‌سیستم پایدار» برای رسیدن به یک دموی زنده، نشان‌دهنده یک تصمیم‌گیری مهندسی آگاهانه و مستند است.
+📄 License
 
-🏗️ معماری و دستاوردهای فنی (Architecture & Engineering)
-
-پروژه بر پایه یک استک مدرن و با تمرکز بر امنیت و ماژولار بودن طراحی شده است:
-
-· بک‌اند و طراحی API: استفاده از FastAPI و Pydantic v2 برای اعتبارسنجی دقیق داده‌ها، و SQLAlchemy برای تعامل با دیتابیس.
-· امنیت و احراز هویت: پیاده‌سازی مکانیزم JWT (JSON Web Tokens) به همراه هش کردن رمز عبور با الگوریتم‌های امن. درگاه‌های حساس با OAuth2PasswordBearer محافظت می‌شوند.
-· اثبات اصالت داده (Data Integrity): استفاده از تابع هش SHA-256 برای تولید «اثر انگشت دیجیتال» (Digital Fingerprint) برای هر سند آپلود شده. این ویژگی تضمین می‌کند که حتی یک بایت تغییر در سند، شناسایی می‌شود.
-· تجمیع و هوش تجاری (Aggregation): طراحی الگوریتمی برای دسته‌بندی اسناد (تحصیلی، مالی، دستاورد، هویتی) و تولید یک خلاصه رزومه داینامیک به‌صورت Real-time.
-
-🚀 استقرار و مهندسی عملیات (Deployment & DevOps)
-
-انتقال پروژه از محیط محلی به محیط ابری شامل غلبه بر چالش‌های متعدد بود:
-
-· استقرار (Deploy) موفق روی پلتفرم Vercel با وجود محدودیت‌های شدید محیط Serverless برای فایل‌سیستم.
-· عیب‌یابی (Debugging) خطاهای مربوط به Routing (مسیریابی)، محیط‌های ایزوله و محافظت‌های شبکه‌ای پلتفرم.
-· مدیریت متغیرهای محیطی (Environment Variables) برای حفظ امنیت کلیدهای رمزنگاری.
-
-📈 نتایج قابل اندازه‌گیری (Business Impact / Results)
-
-· امکان ثبت‌نام و احراز هویت کامل با پشتیبانی از کاراکترهای یونیکد (فارسی و انگلیسی).
-· امکان آپلود و دسته‌بندی ۴ نوع سند مختلف.
-· تولید خودکار خلاصه رزومه (مثال: 4 verified: education=1, financial=1, achievement=1, identity=1).
-· ارائه یک رابط کاربری تعاملی (Swagger UI) برای تست آسان بدون نیاز به کدنویسی.
+MIT — see LICENSE.

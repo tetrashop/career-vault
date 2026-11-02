@@ -113,3 +113,25 @@ MIT — see LICENSE.
 | `DATABASE_URL` | PostgreSQL connection string from Neon |
 
 **Note:** File uploads still use `/tmp` (ephemeral). For persistent files, integrate Vercel Blob or S3.
+
+## 🏆 Full End-to-End Test (Ramin Edjlal)
+
+```json
+{
+  "basics": {
+    "name": "رامین اجلال",
+    "email": "ramin.final.resume@example.com",
+    "phone": "09123456789",
+    "location": "Tehran",
+    "linkedin": "linkedin.com/in/ramin",
+    "github": "github.com/tetrashop",
+    "bio": "مهندس نرم‌افزار، پژوهشگر هوش مصنوعی و بنیان‌گذار CareerVault"
+  },
+  "experience_count": 2,
+  "skills_count": 3,
+  "projects_count": 1,
+  "verified_documents": 1
+}
+```
+
+Data persists after Vercel cold starts ✅ — Verified with 30s delay test.

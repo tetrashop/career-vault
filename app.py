@@ -18,7 +18,7 @@ if not SECRET or len(SECRET) < 32:
 UPLOAD_DIR="/tmp/uploads"
 Path(UPLOAD_DIR).mkdir(exist_ok=True)
 
-engine=create_engine("sqlite:///./vault.db",connect_args={"check_same_thread":False})
+engine=create_engine("sqlite:////tmp/vault.db",connect_args={"check_same_thread":False})
 Session=sessionmaker(bind=engine,autoflush=False,autocommit=False)
 Base=declarative_base()
 

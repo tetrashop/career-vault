@@ -11,22 +11,31 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 from passlib.context import CryptContext
 from jose import jwt, JWTError
 
+# --- تنظیمات امنیتی ---
 SECRET = os.environ.get("SECRET_KEY")
 if not SECRET or len(SECRET) < 32:
     raise SystemExit("FATAL: SECRET_KEY must be set.")
 
-UPLOAD_DIR = "/tmp/uploads"
-Path(UPLOAD_DIR).mkdir(exist_ok=True)
+# --- تنظیمات دیتابیس ---
+DATABASE_URL = os.environ.get("DATABASE_URL")
+if not DATABASE_URL:
+    raise SystemExit("FATAL: DATABASE_URL is not set. Please add it in Vercel.")
 
-engine = create_engine("sqlite:////tmp/vault.db", connect_args={"check_same_thread": False})
+# برای Vercel Serverless، از pool_pre_ping برای پایداری اتصال استفاده می‌کنیم
+engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 Session = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 Base = declarative_base()
+
+# تنظیمات آپلود موقت
+UPLOAD_DIR = "/tmp/uploads"
+Path(UPLOAD_DIR).mkdir(exist_ok=True)
 
 def gdb():
     db = Session()
     try: yield db
     finally: db.close()
 
+# --- مدل‌های دیتابیس ---
 class U(Base):
     __tablename__ = "u"
     id = Column(Integer, primary_key=True)
@@ -80,6 +89,7 @@ class Project(Base):
 
 Base.metadata.create_all(bind=engine)
 
+# --- مدل‌های Pydantic ---
 class UC(BaseModel):
     email: EmailStr
     full_name: str = Field(min_length=2, max_length=120)
@@ -105,6 +115,7 @@ class SkillCreate(BaseModel):
 class ProjCreate(BaseModel):
     name: str; url: Optional[str] = None; description: str
 
+# --- امنیت ---
 pwd = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 oa = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
@@ -117,7 +128,8 @@ def cu(t: str = Depends(oa), db=Depends(gdb)):
     if not u: raise HTTPException(401, "User not found")
     return u
 
-app = FastAPI(title="CareerVault Pro", version="2.0", redirect_slashes=False)
+# --- اپلیکیشن ---
+app = FastAPI(title="CareerVault Pro", version="2.1", redirect_slashes=False)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 @app.get("", include_in_schema=False)
@@ -160,9 +172,11 @@ async def up(doc_type: str = Form(...), title: str = Form(...), issuer: str = Fo
     if doc_type not in {"education", "financial", "achievement", "identity"}: raise HTTPException(422, "Bad type")
     data = await file.read()
     if not data or len(data) > 20*1024*1024: raise HTTPException(413, "Size error")
+    
     name = f"{uuid.uuid4().hex}.bin"
     path = os.path.join(UPLOAD_DIR, name)
     with open(path, "wb") as fh: fh.write(data)
+    
     d = D(owner_id=user.id, doc_type=doc_type, title=title, issuer=issuer or None, issue_date=issue_date or None, file_path=path, file_hash=hashlib.sha256(data).hexdigest(), verified=True)
     db.add(d); db.commit(); return {"id": d.id, "file_hash": d.file_hash}
 

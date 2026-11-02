@@ -96,3 +96,20 @@ To make this persistent and production-ready:
 📄 License
 
 MIT — see LICENSE.
+
+## 🗄️ Persistent Storage (v2.1)
+
+**CareerVault is now production-ready for data persistence.**
+
+- **Database:** PostgreSQL (Neon) — Data survives Vercel cold starts
+- **Driver:** `psycopg2-binary` — Auto-installed on deploy
+- **Proof:** Test with `sleep 30 && re-login` confirms data persists
+
+### Environment Variables (required on Vercel)
+
+| Variable | Description |
+|----------|-------------|
+| `SECRET_KEY` | JWT signing key (≥ 32 chars) |
+| `DATABASE_URL` | PostgreSQL connection string from Neon |
+
+**Note:** File uploads still use `/tmp` (ephemeral). For persistent files, integrate Vercel Blob or S3.

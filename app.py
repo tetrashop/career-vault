@@ -92,10 +92,11 @@ def cu(t:str=Depends(oa),db=Depends(gdb)):
     if not u: raise HTTPException(401,"no user")
     return u
 
-app=FastAPI(title="CareerVault")
+app = FastAPI(title="CareerVault", redirect_slashes=False)
 app.add_middleware(CORSMiddleware,allow_origins=["*"],allow_credentials=True,allow_methods=["*"],allow_headers=["*"])
 
-@app.get("/health")
+@app.get("", include_in_schema=False)
+@app.get("/")
 def h(): return {"status":"ok"}
 
 @app.post("/api/auth/register",response_model=UO,status_code=201)

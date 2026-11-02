@@ -1,10 +1,14 @@
 # CareerVault — MVP
 
-> ⚠️ **Status: Prototype / MVP** — Not production-ready. See [Limitations](#limitations).
+> ⚠️ **Status: Prototype / MVP** — Not production-ready for persistent data.
 
-A minimal FastAPI service for a personal "career identity wallet":
-authenticated users can upload documents (education, financial, achievements,
-identity) and get a unified profile with SHA-256 integrity fingerprints.
+A minimal FastAPI service for a personal "career identity wallet": authenticated users can upload documents (education, financial, achievements, identity) and get a unified profile with SHA-256 integrity fingerprints.
+
+## 🚀 Live Demo
+
+**[https://career-vault-tan.vercel.app/docs](https://career-vault-tan.vercel.app/docs)**
+
+> **Note on Data Persistence:** This demo runs on Vercel Serverless with SQLite stored in `/tmp`. **Data resets on every cold start.** For real use, migrate to PostgreSQL.
 
 ## Features
 
@@ -18,50 +22,31 @@ identity) and get a unified profile with SHA-256 integrity fingerprints.
 
 FastAPI · SQLAlchemy 2 · SQLite · Pydantic v2 · python-jose · passlib
 
-## Quick start
+## API
 
-```bash
-python3 -m venv .venv && . .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env
-python3 -c "import secrets;print('SECRET_KEY='+secrets.token_hex(32))" >> .env
-python3 app.py
-```
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/api/auth/register` | – | Create account |
+| POST | `/api/auth/login` | – | Get JWT token |
+| POST | `/api/documents` | JWT | Upload a document |
+| GET | `/api/documents` | JWT | List your documents |
+| GET | `/api/profile` | JWT | Full profile + summary |
+| GET | `/health` | – | Health check |
 
-Open http://127.0.0.1:8000/docs
+## Deployment (Vercel)
 
-API
+1. Fork this repo
+2. Import to Vercel → Framework Preset: **FastAPI**
+3. Set environment variable `SECRET_KEY` (generate with `python3 -c "import secrets;print(secrets.token_hex(32))"`)
+4. Deploy
 
-Method Path Auth Description
-POST /api/auth/register – Create account
-POST /api/auth/login – Get JWT token
-POST /api/documents JWT Upload a document
-GET /api/documents JWT List your documents
-GET /api/profile JWT Full profile + summary
-GET /health – Health check
+## Limitations
 
-Limitations
+- **No persistent storage** — SQLite in `/tmp` resets on cold starts
+- No file encryption at rest (only SHA-256 integrity)
+- No real OCR or content verification
+- No rate limiting, CSRF, or CORS hardening
 
-This is a learning/portfolio project. It does not yet implement:
+## License
 
-· File encryption at rest (only integrity via SHA-256)
-· Real OCR or content verification (verified is set unconditionally)
-· Entity resolution across issuers
-· LLM-based resume generation
-· Digital signatures or blockchain anchoring
-· Rate limiting, HTTPS, CSRF, CORS hardening
-
-Production checklist (before deploying)
-
-☐ Set a strong SECRET_KEY via environment
-☐ Switch SQLite → PostgreSQL
-☐ Replace plain-text uploads with encrypted storage (S3 + KMS)
-☐ Add bcrypt (currently pbkdf2_sha256 for Termux compatibility)
-☐ Restrict CORS to specific origins
-☐ Put behind Nginx + HTTPS
-☐ Add rate limiting (slowapi)
-☐ Add tests
-
-License
-
-MIT — see LICENSE.
+MIT — see [LICENSE](LICENSE).

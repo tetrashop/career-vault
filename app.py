@@ -165,40 +165,49 @@ def calculate_keyword_score(resume_text: str, job_desc: str) -> (float, List[str
     return round(score, 1), feedback
 
 def calculate_impact_score(experiences: List[Experience]) -> (float, List[str]):
-    """ارزیابی قدرت توصیفات بر اساس فرمول PARQ (Problem, Action, Result, Quantify)"""
+    """ارزیابی قدرت توصیفات دوزبانه (PARQ) - فارسی + انگلیسی"""
     if not experiences:
         return 0.0, ["Add at least one work experience to get an impact score."]
     
     total_score = 0
     feedback = []
-    # افعال قوی مورد انتظار
-    action_verbs = {"led", "built", "designed", "developed", "created", "managed", "improved", "increased", "reduced", "launched", "implemented", "optimized", "automated", "delivered", "achieved", "grew", "saved", "transformed"}
+    
+    # افعال قوی انگلیسی + فارسی
+    action_verbs_en = {"led", "built", "designed", "developed", "created", "managed", "improved", "increased", "reduced", "launched", "implemented", "optimized", "automated", "delivered", "achieved", "grew", "saved", "transformed"}
+    action_verbs_fa = {"رهبری", "ساخت", "طراحی", "توسعه", "ایجاد", "مدیریت", "بهبود", "افزایش", "کاهش", "راه‌اندازی", "پیاده‌سازی", "بهینه‌سازی", "خودکارسازی", "تحویل", "دستیابی", "رشد", "صرفه‌جویی", "تحول", "اجرا", "هدایت", "بنیان‌گذاری"}
+    
+    # کلمات نتیجه‌محور انگلیسی + فارسی
+    result_en = {"increased", "reduced", "improved", "saved", "grew", "achieved", "accelerated", "cut", "boosted"}
+    result_fa = {"افزایش", "کاهش", "بهبود", "صرفه‌جویی", "رشد", "دستیابی", "تسریع", "بازیابی", "ارتقا"}
     
     for exp in experiences:
-        desc = exp.description or ""
+        desc = (exp.description or "").strip()
         score = 0
+        exp_feedback = []
         
         # 1. آیا با فعل قوی شروع شده؟
-        first_word = desc.strip().split()[0].lower() if desc.strip() else ""
-        if first_word in action_verbs:
+        first_word = desc.split()[0].lower() if desc else ""
+        first_word_fa = desc.split()[0] if desc else ""
+        if first_word in action_verbs_en or first_word_fa in action_verbs_fa:
             score += 30
         else:
-            feedback.append(f"'{exp.title}': Start description with a strong action verb (e.g., Led, Built).")
+            exp_feedback.append(f"'{exp.title}': Start with a strong action verb (e.g., Led, رهبری).")
         
         # 2. آیا عدد یا درصد دارد؟
         if re.search(r'\d+', desc):
             score += 40
         else:
-            feedback.append(f"'{exp.title}': Add numbers or percentages to quantify impact.")
+            exp_feedback.append(f"'{exp.title}': Add numbers or percentages to quantify impact.")
         
         # 3. آیا کلمات کلیدی نتیجه‌محور دارد؟
-        result_keywords = {"increased", "reduced", "improved", "saved", "grew", "achieved", "accelerated", "cut", "boosted"}
-        if any(kw in desc.lower() for kw in result_keywords):
+        desc_lower = desc.lower()
+        if any(kw in desc_lower for kw in result_en) or any(kw in desc for kw in result_fa):
             score += 30
         else:
-            feedback.append(f"'{exp.title}': Use result-oriented language (e.g., increased, reduced).")
-            
+            exp_feedback.append(f"'{exp.title}': Use result-oriented language (e.g., increased, افزایش).")
+        
         total_score += score
+        feedback.extend(exp_feedback)
     
     avg_score = total_score / len(experiences)
     return round(avg_score, 1), feedback

@@ -133,13 +133,27 @@ def cu(t: str = Depends(oa), db=Depends(gdb)):
     if not u: raise HTTPException(401, "User not found")
     return u
 
-def extract_keywords(text: str) -> set:
-    """استخراج کلمات کلیدی از متن فارسی و انگلیسی"""
-    stop_en = {"and","the","a","an","to","of","in","for","with","on","at","is","are","was","were","be","been","being","have","has","had","do","does","did","will","would","could","should","may","might","must","can","this","that","these","those","i","you","he","she","it","we","they","me","him","her","us","them","my","your","his","its","our","their","from","by","as","or","but","if","so","than","then","too","very","just","about","into","through","during","before","after","above","below","between","under","over","looking","must","least","strong","experience"}
-    stop_fa = {"و","در","به","از","که","این","را","با","است","برای","آن","یک","خود","تا","کرد","بر","هم","نیز","یا","شد","اما","اگر","چون","پس","هر","همه","دیگر","بین","زیر","روی","پیش","قبل","بعد","هنگام","وقتی","دنبال","باید","تجربه","داشته","باشد","هستیم","تخصص","دارای","نه","بله","کردن","شدن","بودن"}
+def normalize_persian(text: str) -> str:
+    """نرمال‌سازی متن فارسی برای استخراج کلمات بهتر"""
+    # تبدیل نیم‌فاصله به فاصله
+    text = text.replace("\u200c", " ")
+    # حذف علائم نگارشی فارسی
+    for ch in "،؛؟!«»:()[]{}":
+        text = text.replace(ch, " ")
+    # حذف اعراب
+    text = re.sub(r'[\u064B-\u065F]', '', text)
+    return text
 
-    en_words = set(re.findall(r'\b[a-zA-Z]{3,}\b', text.lower())) - stop_en
-    fa_words = set(re.findall(r'[\u0600-\u06FF]{3,}', text)) - stop_fa
+def extract_keywords(text: str) -> set:
+    """استخراج کلمات کلیدی از متن فارسی و انگلیسی (نسخه بهبود یافته)"""
+    stop_en = {"and","the","a","an","to","of","in","for","with","on","at","is","are","was","were","be","been","being","have","has","had","do","does","did","will","would","could","should","may","might","must","can","this","that","these","those","i","you","he","she","it","we","they","me","him","her","us","them","my","your","his","its","our","their","from","by","as","or","but","if","so","than","then","too","very","just","about","into","through","during","before","after","above","below","between","under","over","looking","least","strong","experience"}
+    stop_fa = {"و","در","به","از","که","این","را","با","است","برای","آن","یک","خود","تا","کرد","بر","هم","نیز","یا","شد","اما","اگر","چون","پس","هر","همه","دیگر","بین","زیر","روی","پیش","قبل","بعد","هنگام","وقتی","دنبال","باید","تجربه","داشته","باشد","هستیم","تخصص","دارای","نه","بله","کردن","شدن","بودن","های","ها","ای","آنها","شده"}
+
+    # نرمال‌سازی متن فارسی
+    normalized = normalize_persian(text)
+
+    en_words = set(re.findall(r'\b[a-zA-Z]{3,}\b', normalized.lower())) - stop_en
+    fa_words = set(re.findall(r'[\u0600-\u06FF]{3,}', normalized)) - stop_fa
     return en_words | fa_words
 
 def calculate_keyword_score(resume_text: str, job_desc: str):

@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional, List
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form
+from fastapi.responses import FileResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr, Field
@@ -226,9 +227,20 @@ def calculate_structure_score(db, user):
 app = FastAPI(title="CareerVault Pro", version="3.2", redirect_slashes=False)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
+
+@app.get("/resume", include_in_schema=False)
+@app.get("/resume/", include_in_schema=False)
+def serve_resume():
+    import os
+    path = os.path.join(os.path.dirname(__file__), "Ramin_Real_Resume.html")
+    if os.path.exists(path):
+        return FileResponse(path)
+    return {"error": "Resume file not found. Please generate it first."}
+
 @app.get("", include_in_schema=False)
 @app.get("/")
 def h(): return {"status":"ok"}
+
 
 @app.post("/api/auth/register", response_model=UO, status_code=201)
 def reg(p: UC, db=Depends(gdb)):

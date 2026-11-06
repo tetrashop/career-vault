@@ -564,6 +564,14 @@ def get_advisor(db=Depends(gdb), user=Depends(cu)):
     }
 
 
+
+@app.delete("/api/profile/experience/all")
+def delete_all_experience(db=Depends(gdb), user=Depends(cu)):
+    db.query(Experience).filter(Experience.owner_id == user.id).delete()
+    db.commit()
+    return {"status": "all experiences deleted"}
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

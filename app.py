@@ -334,6 +334,190 @@ def score_resume(req: ScoreRequest, db=Depends(gdb), user=Depends(cu)):
 
     return {"overall_score": round(overall,1), "keyword_score": kw_s, "impact_score": imp_s, "structure_score": str_s, "feedback": all_fb}
 
+
+# ═══════════════════════════════════════════════
+# 🎯 مربی هوشمند رزومه — تحلیل و پیشنهاد ارتقا
+# ═══════════════════════════════════════════════
+@app.get("/api/advisor")
+def get_advisor(db=Depends(gdb), user=Depends(cu)):
+    exps = db.query(Experience).filter(Experience.owner_id == user.id).all()
+    skills = db.query(Skill).filter(Skill.owner_id == user.id).all()
+    projs = db.query(Project).filter(Project.owner_id == user.id).all()
+    docs = db.query(D).filter(D.owner_id == user.id).all()
+    
+    categories = []
+    opportunities = []
+    
+    # ─── ۱. اطلاعات تماس ───
+    contact_score = 0
+    contact_missing = []
+    if user.phone: contact_score += 20
+    else: contact_missing.append("شماره تلفن")
+    if user.email: contact_score += 20
+    if user.location: contact_score += 15
+    else: contact_missing.append("محل سکونت")
+    if user.linkedin: contact_score += 20
+    else:
+        contact_missing.append("لینکدین")
+        opportunities.append({
+            "title": "ساخت پروفایل لینکدین",
+            "gain": 10,
+            "why": "۹۰٪ کارفرمایان قبل از مصاحبه، لینکدین شما را چک می‌کنند.",
+            "action": "یک پروفایل لینکدین بسازید و آدرس آن را در رزومه ثبت کنید."
+        })
+    if user.github: contact_score += 15
+    else: contact_missing.append("گیت‌هاب")
+    if user.bio and len(user.bio) > 50: contact_score += 10
+    else: contact_missing.append("بیوگرافی حرفه‌ای")
+    
+    categories.append({
+        "name": "اطلاعات تماس",
+        "emoji": "📞",
+        "score": contact_score,
+        "max": 100,
+        "missing": contact_missing
+    })
+    
+    # ─── ۲. تجربه کاری ───
+    quality_exps = sum(1 for e in exps if e.description and len(e.description) > 100 and any(c.isdigit() for c in e.description))
+    if len(exps) >= 5: exp_score = 100
+    elif len(exps) >= 3: exp_score = 85
+    elif len(exps) >= 2: exp_score = 65
+    elif len(exps) >= 1: exp_score = 40
+    else: exp_score = 0
+    
+    if len(exps) == 0:
+        opportunities.append({
+            "title": "افزودن اولین تجربه کاری",
+            "gain": 40,
+            "why": "بدون تجربه، رزومه شما برای ATS ضعیف است.",
+            "action": "حتی تجربه‌های داوطلبانه یا فریلنس هم ارزشمند است."
+        })
+    elif len(exps) < 3:
+        opportunities.append({
+            "title": "افزودن تجربه‌های بیشتر",
+            "gain": 20,
+            "why": f"شما {len(exps)} تجربه دارید. کارفرمایان ۳-۵ تجربه را ترجیح می‌دهند.",
+            "action": "پروژه‌های فریلنس، داوطلبانه یا حتی مشارکت در متن‌باز را اضافه کنید."
+        })
+    if quality_exps < len(exps):
+        opportunities.append({
+            "title": "کمی‌سازی دستاوردها",
+            "gain": 10,
+            "why": f"از {len(exps)} تجربه، فقط {quality_exps} توضیح با عدد و دستاورد دارند.",
+            "action": "به هر تجربه اعداد اضافه کنید (مثلاً ۳۰٪ بهبود، ۲۰ مشتری، ۵ تیم)."
+        })
+    
+    categories.append({"name": "تجربه کاری", "emoji": "💼", "score": exp_score, "max": 100, "count": len(exps)})
+    
+    # ─── ۳. مهارت‌ها ───
+    if len(skills) >= 16: skill_score = 100
+    elif len(skills) >= 11: skill_score = 85
+    elif len(skills) >= 7: skill_score = 70
+    elif len(skills) >= 4: skill_score = 50
+    elif len(skills) >= 1: skill_score = 30
+    else: skill_score = 0
+    
+    if len(skills) < 10:
+        opportunities.append({
+            "title": f"افزودن {10 - len(skills)} مهارت دیگر",
+            "gain": 15,
+            "why": f"شما {len(skills)} مهارت دارید. برای رزومه‌ی کامل، ۱۰+ توصیه می‌شود.",
+            "action": "مهارت‌های نرم (Communication) و سخت (Framework) را متعادل کنید."
+        })
+    levels = set(s.level for s in skills)
+    if len(levels) < 3:
+        opportunities.append({
+            "title": "تنوع سطوح مهارت",
+            "gain": 5,
+            "why": "سطح‌بندی یکنواخت (همه Advanced) غیرواقعی به نظر می‌رسد.",
+            "action": "سطوح را صادقانه توزیع کنید: Beginner، Intermediate، Advanced، Expert."
+        })
+    
+    categories.append({"name": "مهارت‌ها", "emoji": "🛠️", "score": skill_score, "max": 100, "count": len(skills)})
+    
+    # ─── ۴. پروژه‌ها ───
+    if len(projs) >= 5: proj_score = 100
+    elif len(projs) >= 4: proj_score = 90
+    elif len(projs) >= 3: proj_score = 70
+    elif len(projs) >= 2: proj_score = 50
+    elif len(projs) >= 1: proj_score = 30
+    else: proj_score = 0
+    
+    if len(projs) < 3:
+        opportunities.append({
+            "title": f"افزودن {3 - len(projs)} پروژه",
+            "gain": 20,
+            "why": "کارفرمایان فنی، پروژه‌های واقعی را به رزومه ترجیح می‌دهند.",
+            "action": "پروژه‌های GitHub خود را اضافه کنید، حتی کوچک."
+        })
+    if projs and not any(p.url for p in projs):
+        opportunities.append({
+            "title": "افزودن لینک به پروژه‌ها",
+            "gain": 5,
+            "why": "پروژه بدون لینک، قابل راستی‌آزمایی نیست.",
+            "action": "به هر پروژه لینک GitHub یا دموی زنده اضافه کنید."
+        })
+    
+    categories.append({"name": "پروژه‌ها", "emoji": "🚀", "score": proj_score, "max": 100, "count": len(projs)})
+    
+    # ─── ۵. اسناد ───
+    if len(docs) >= 4: doc_score = 100
+    elif len(docs) >= 3: doc_score = 80
+    elif len(docs) >= 2: doc_score = 60
+    elif len(docs) >= 1: doc_score = 40
+    else: doc_score = 0
+    
+    if not any(d.doc_type == "education" for d in docs):
+        opportunities.append({
+            "title": "آپلود مدرک تحصیلی",
+            "gain": 15,
+            "why": "مدرک تحصیلی، اولین چیزی است که ATS چک می‌کند.",
+            "action": "اسکن دیپلم یا کارشناسی را در دسته «تحصیلات» آپلود کنید."
+        })
+    if not any(d.doc_type == "identity" for d in docs):
+        opportunities.append({
+            "title": "آپلود کارت ملی یا گذرنامه",
+            "gain": 10,
+            "why": "تأیید هویت، اعتماد کارفرما را جلب می‌کند.",
+            "action": "نسخه اسکن‌شده کارت ملی را در دسته «هویتی» آپلود کنید."
+        })
+    if len(docs) < 3:
+        opportunities.append({
+            "title": f"آپلود {3 - len(docs)} سند دیگر",
+            "gain": 10,
+            "why": "مدارک بیشتر = اعتبار بیشتر در ATS.",
+            "action": "گواهی‌های آنلاین، جوایز یا تقدیرنامه‌ها را در دسته «افتخارات» اضافه کنید."
+        })
+    
+    categories.append({"name": "اسناد تأییدشده", "emoji": "🏅", "score": doc_score, "max": 100, "count": len(docs)})
+    
+    # ─── محاسبه امتیاز کل ───
+    overall = int(sum(c["score"] for c in categories) / len(categories))
+    
+    # مرتب‌سازی فرصت‌ها بر اساس سود
+    opportunities.sort(key=lambda x: x["gain"], reverse=True)
+    
+    # پیام هوشمند
+    if overall >= 90:
+        message = "🏆 رزومه شما در سطح جهانی است! فقط چند اصلاح جزئی برای کمال لازم است."
+    elif overall >= 75:
+        message = "🎯 رزومه خوبی دارید. با چند ارتقای کوچک، می‌توانید به سطح عالی برسید."
+    elif overall >= 50:
+        message = "📈 رزومه شما پایه‌ی خوبی دارد، اما فرصت‌های زیادی برای ارتقا وجود دارد."
+    else:
+        message = "🚀 رزومه شما تازه شروع شده. هرچه سریع‌تر این پیشنهادها را اجرا کنید، شانس استخدام بالاتر می‌رود."
+    
+    return {
+        "overall_completion": overall,
+        "message": message,
+        "categories": categories,
+        "opportunities": opportunities[:5],
+        "total_opportunities": len(opportunities),
+        "potential_score": min(100, overall + sum(o["gain"] for o in opportunities))
+    }
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

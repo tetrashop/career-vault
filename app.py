@@ -1,4 +1,4 @@
-import os, hashlib, uuid, json, re
+import os, hashlib, uuid, json, re, re
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional, List
@@ -495,6 +495,52 @@ def get_advisor(db=Depends(gdb), user=Depends(cu)):
     # ─── محاسبه امتیاز کل ───
     overall = int(sum(c["score"] for c in categories) / len(categories))
     
+    # ─── ۶. کشفیات واقعی (Factual Insights) ───
+    factual_insights = []
+    all_text = (user.bio or "") + " " + " ".join([e.description or "" for e in exps]) + " " + " ".join([p.description or "" for p in projs])
+    all_text_lower = all_text.lower()
+    skill_names = [s.name.lower() for s in skills]
+    
+    # تست ۱: اشاره به گیت‌هاب در متن، اما بدون لینک در پروفایل
+    if ("github" in all_text_lower or "گیت‌هاب" in all_text) and not user.github:
+        factual_insights.append({
+            "title": "لینک گیت‌هاب شما گم شده است",
+            "gain": 10,
+            "why": "شما در متن رزومه‌تان به گیت‌هاب اشاره کرده‌اید، اما لینک پروفایل گیت‌هاب در اطلاعات تماس ثبت نشده است.",
+            "action": "آدرس گیت‌هاب خود را در بخش پروفایل ثبت کنید."
+        })
+        
+    # تست ۲: اشاره به مشتری، اما بدون مهارت Customer Service
+    if ("مشتری" in all_text or "customer" in all_text_lower) and "customer service" not in skill_names:
+        factual_insights.append({
+            "title": "مهارت پنهان 'Customer Service' کشف شد",
+            "gain": 5,
+            "why": "شما در تجربیات خود به تعامل با مشتری اشاره کرده‌اید، اما این مهارت در لیست مهارت‌های شما نیست.",
+            "action": "مهارت Customer Service را به لیست مهارت‌های خود اضافه کنید."
+        })
+        
+    # تست ۳: اشاره به تیم/رهبری، اما بدون مهارت Teamwork/Leadership
+    if ("تیم" in all_text or "team" in all_text_lower or "رهبری" in all_text) and "teamwork" not in skill_names and "leadership" not in skill_names:
+        factual_insights.append({
+            "title": "مهارت پنهان 'Teamwork' کشف شد",
+            "gain": 5,
+            "why": "شما در متن خود به کار تیمی یا رهبری اشاره کرده‌اید، اما این مهارت را در لیست ندارید.",
+            "action": "مهارت Teamwork یا Leadership را به لیست مهارت‌های خود اضافه کنید."
+        })
+
+    # تست ۴: آیا از اعداد برای کمّی‌سازی استفاده شده؟
+    has_numbers = any(c.isdigit() for c in (user.bio or "")) or any(any(c.isdigit() for c in (e.description or "")) for e in exps)
+    if not has_numbers and len(exps) > 0:
+        factual_insights.append({
+            "title": "دستاوردهای شما عدد ندارند",
+            "gain": 10,
+            "why": "در هیچ‌کدام از تجربیات یا بیوگرافی خود از عدد یا درصد استفاده نکرده‌اید. کارفرمایان به اعداد علاقه‌مندند.",
+            "action": "به هر تجربه حداقل یک عدد اضافه کنید (مثلاً ۲۰٪ بهبود، ۶۰ مشتری)."
+        })
+
+    # اضافه کردن کشفیات به لیست فرصت‌ها
+    opportunities.extend(factual_insights)
+
     # مرتب‌سازی فرصت‌ها بر اساس سود
     opportunities.sort(key=lambda x: x["gain"], reverse=True)
     
